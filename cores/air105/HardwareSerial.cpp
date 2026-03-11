@@ -229,12 +229,12 @@ extern "C" {
 
 void UART0_IRQHandler(void)
 {
-    Serial0._rx_isr_handler();
+    Serial._rx_isr_handler();
 }
 
 void UART1_IRQHandler(void)
 {
-    Serial._rx_isr_handler();
+    Serial1._rx_isr_handler();
 }
 
 void UART2_IRQHandler(void)
