@@ -69,14 +69,15 @@ void HardwareSerial::begin(unsigned long baud, uint8_t config)
     /* Set line control: data bits, parity, stop bits */
     _uart->LCR = config & 0x3F;       /* bits [5:0] of LCR */
 
-    /* Enable and reset FIFOs */
+    /* Enable and reset FIFOs, set RX trigger level to 1 byte */
     _uart->OFFSET_8.FCR = UART_FCR_FIFOE | UART_FCR_RFIFOR | UART_FCR_XFIFOR;
 
-    /* Disable ALL interrupts - TX-only polling mode for now */
-    _uart->OFFSET_4.IER = 0;
-    
-    /* Do NOT enable NVIC - no interrupts used */
-    NVIC_DisableIRQ(_irqn);
+    /* Enable RX interrupts: ERBFI (RX data available) + ELSI (line status/error) */
+    _uart->OFFSET_4.IER = UART_IER_ERBFI | UART_IER_ELSI;
+
+    /* Enable NVIC for this UART */
+    NVIC_SetPriority(_irqn, 3);
+    NVIC_EnableIRQ(_irqn);
 }
 
 void HardwareSerial::end()
