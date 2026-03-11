@@ -14,6 +14,9 @@
 #include <string.h>
 #include <math.h>
 
+/* ---- AVR pgmspace compatibility (PROGMEM, pgm_read_xxx, etc.) ---- */
+#include "avr/pgmspace.h"
+
 /* ---- Vendor CMSIS + register headers ---- */
 #include "air105.h"
 
