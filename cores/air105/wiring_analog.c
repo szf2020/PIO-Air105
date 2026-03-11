@@ -224,6 +224,65 @@ int analogReadVBAT(void)
 }
 
 /**
+ * @brief Burst-read multiple ADC samples from one channel using the ADC FIFO
+ * @param pin   Arduino pin number (e.g. A0)
+ * @param buf   Output buffer for 12-bit samples
+ * @param count Number of samples to read (1-14 per FIFO batch)
+ * @return Number of samples actually read
+ *
+ * Note: The Air105 ADC has no DMA request line, so true DMA-based ADC is
+ * not possible on this SoC.  This function uses the hardware FIFO (up to
+ * 14 entries) to burst-read samples efficiently with minimal per-sample
+ * overhead, then copies them to the caller's buffer.
+ */
+int analogReadMultiple(uint8_t pin, uint16_t *buf, uint16_t count)
+{
+    if (!buf || count == 0) return 0;
+
+    uint8_t channel = pinToAdcChannel(pin);
+    if (channel == 0xFF) return 0;
+
+    adcInit();
+    configureAdcPin(pin);
+
+    uint16_t total = 0;
+
+    while (total < count) {
+        /* How many samples this batch (FIFO holds up to 14) */
+        uint16_t batch = count - total;
+        if (batch > 14) batch = 14;
+
+        /* Set FIFO threshold to (batch - 1) so the done flag fires after
+         * 'batch' samples have been collected */
+        ADC->FIFO_THR = batch - 1;
+
+        /* Clear FIFO */
+        ADC->FIFO = 3;
+        while (ADC->FIFO & (1UL << 1)) {}
+
+        /* Start continuous sampling on the selected channel */
+        ADC->CR1 = ADC_CR1_SAMP_ENABLE | channel;
+
+        /* Wait until FIFO fill level reaches the requested batch count */
+        while (ADC->FIFO_FL < batch) {}
+
+        /* Stop sampling */
+        ADC->CR1 = 0;
+
+        /* Drain FIFO into user buffer */
+        for (uint16_t i = 0; i < batch; i++) {
+            buf[total++] = (uint16_t)(ADC->DATA & 0x0FFF);
+        }
+    }
+
+    /* Restore default FIFO threshold */
+    ADC->FIFO_THR = 13;
+    ADC->FIFO = 3;
+
+    return (int)total;
+}
+
+/**
  * @brief Convert Arduino pin number to PWM channel
  * @param pin Arduino pin number
  * @return PWM channel (0-5), or 0xFF if not a PWM pin

@@ -426,3 +426,135 @@ void SPIClass::notUsingInterrupt(int interruptNumber) { (void)interruptNumber; }
 
 void SPIClass::attachInterrupt() {}
 void SPIClass::detachInterrupt() {}
+
+/* ================================================================== */
+/*  DMA helpers                                                       */
+/* ================================================================== */
+
+uint8_t SPIClass::_dmaRequestTx() const
+{
+    if (_spi == SPIM0) return DMA_REQUEST_SPI0_TX;
+    if (_spi == SPIM1) return DMA_REQUEST_SPI1_TX;
+    return DMA_REQUEST_SPI2_TX;
+}
+
+uint8_t SPIClass::_dmaRequestRx() const
+{
+    if (_spi == SPIM0) return DMA_REQUEST_SPI0_RX;
+    if (_spi == SPIM1) return DMA_REQUEST_SPI1_RX;
+    return DMA_REQUEST_SPI2_RX;
+}
+
+/* ================================================================== */
+/*  SPI DMA transfer — full duplex                                    */
+/* ================================================================== */
+
+bool SPIClass::transferDMA(const void *txBuf, void *rxBuf, size_t count)
+{
+    if (count == 0) return true;
+    if (!txBuf && !rxBuf) return false;
+    if (!_begun) begin();
+
+    /* Static dummy byte for TX-only (sends 0xFF) or RX-discard */
+    static const uint8_t dummyTx = 0xFF;
+    static uint8_t dummyRx;
+
+    /* Allocate two DMA channels: one for TX, one for RX */
+    int8_t chTx = DMAControl.allocateChannel();
+    if (chTx < 0) return false;
+
+    int8_t chRx = DMAControl.allocateChannel();
+    if (chRx < 0) {
+        DMAControl.freeChannel(chTx);
+        return false;
+    }
+
+    /* Configure TX channel */
+    DMAControl.configure(chTx,
+                         _dmaRequestTx(),
+                         DMA_MEMORY_TO_PERIPH,
+                         DMA_PINC_DISABLE,                     /* SPI DR is fixed */
+                         txBuf ? DMA_MINC_ENABLE : DMA_MINC_DISABLE, /* inc if real buf */
+                         DMA_PDATAALIGN_BYTE,
+                         DMA_MDATAALIGN_BYTE,
+                         DMA_PRIORITY_MEDIUM);
+
+    /* Configure RX channel */
+    DMAControl.configure(chRx,
+                         _dmaRequestRx(),
+                         DMA_PERIPH_TO_MEMORY,
+                         DMA_PINC_DISABLE,                     /* SPI DR is fixed */
+                         rxBuf ? DMA_MINC_ENABLE : DMA_MINC_DISABLE,
+                         DMA_PDATAALIGN_BYTE,
+                         DMA_MDATAALIGN_BYTE,
+                         DMA_PRIORITY_HIGH);
+
+    bool ok = true;
+    size_t offset = 0;
+
+    while (offset < count) {
+        /* DMA max block is 4095; chunk if needed */
+        uint32_t chunk = count - offset;
+        if (chunk > DMA_MAX_BLOCK_SIZE) chunk = DMA_MAX_BLOCK_SIZE;
+
+        /* Prepare SPI for DMA: disable, set thresholds, enable DMA signals */
+        _spi->SSIENR = 0;
+        _spi->DMACR  = 0;
+        _spi->DMATDLR = 7;   /* TX DMA request when FIFO <= 7 entries */
+        _spi->DMARDLR = 0;   /* RX DMA request when FIFO >= 1 entry */
+        _spi->DMACR  = SPI_DMACR_TDMAE | SPI_DMACR_RDMAE;
+        _spi->SSIENR = 1;
+
+        /* Start RX DMA first (so it's ready to drain) */
+        const void *rxAddr = rxBuf ? ((const uint8_t *)rxBuf + offset) : (void *)&dummyRx;
+        DMAControl.start(chRx, (uint32_t)&_spi->DR, (void *)rxAddr, chunk);
+
+        /* Start TX DMA */
+        const void *txAddr = txBuf ? ((const uint8_t *)txBuf + offset) : (const void *)&dummyTx;
+        DMAControl.start(chTx, (uint32_t)&_spi->DR, (void *)txAddr, chunk);
+
+        /* Assert slave select — starts clocking */
+        _spi->SER = 1;
+
+        /* Wait for both channels to complete (RX finishes last in full-duplex) */
+        if (!DMAControl.poll(chRx, 5000) || !DMAControl.poll(chTx, 5000)) {
+            DMAControl.abort(chTx);
+            DMAControl.abort(chRx);
+            ok = false;
+            break;
+        }
+
+        offset += chunk;
+    }
+
+    /* Deselect and disable DMA mode on SPI */
+    _spi->SER = 0;
+    _spi->SSIENR = 0;
+    _spi->DMACR  = 0;
+    _spi->SSIENR = 1;
+
+    DMAControl.freeChannel(chTx);
+    DMAControl.freeChannel(chRx);
+
+    return ok;
+}
+
+/* ================================================================== */
+/*  SPI DMA write — TX-only (discard RX)                              */
+/* ================================================================== */
+
+bool SPIClass::writeDMA(const void *buf, size_t count)
+{
+    if (!buf || count == 0) return (count == 0);
+    return transferDMA(buf, nullptr, count);
+}
+
+/* ================================================================== */
+/*  SPI DMA read — RX-only (send 0xFF dummy)                         */
+/* ================================================================== */
+
+bool SPIClass::readDMA(void *buf, size_t count)
+{
+    if (!buf || count == 0) return (count == 0);
+    return transferDMA(nullptr, buf, count);
+}

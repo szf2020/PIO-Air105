@@ -31,6 +31,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "air105.h"
+#include "DMA.h"
 
 /* ---- Arduino SPI mode constants ---- */
 #define SPI_MODE0  0x00  /* CPOL=0, CPHA=0 */
@@ -140,6 +141,36 @@ public:
     void attachInterrupt();
     void detachInterrupt();
 
+    /* ---- DMA transfer methods (Air105 extension) ---- */
+
+    /**
+     * @brief Full-duplex DMA transfer (TX + RX simultaneously).
+     * @param txBuf  TX data (NULL to send 0xFF filler bytes).
+     * @param rxBuf  RX data (NULL to discard received bytes).
+     * @param count  Number of bytes to transfer.
+     * @return true on success.
+     *
+     * Uses two DMA channels (one TX, one RX). Blocks until complete.
+     * CS control is the caller's responsibility.
+     */
+    bool transferDMA(const void *txBuf, void *rxBuf, size_t count);
+
+    /**
+     * @brief TX-only DMA write (discards received data).
+     * @param buf   Data to transmit.
+     * @param count Number of bytes.
+     * @return true on success.
+     */
+    bool writeDMA(const void *buf, size_t count);
+
+    /**
+     * @brief RX-only DMA read (sends 0xFF as dummy TX).
+     * @param buf   Buffer for received data.
+     * @param count Number of bytes.
+     * @return true on success.
+     */
+    bool readDMA(void *buf, size_t count);
+
     operator bool() { return _begun; }
 
 private:
@@ -159,6 +190,10 @@ private:
     void    _configurePins();
     void    _applyConfig(uint32_t clock, uint8_t dataMode);
     uint8_t _reverseByte(uint8_t b);
+
+    /* DMA helpers */
+    uint8_t _dmaRequestTx() const;
+    uint8_t _dmaRequestRx() const;
 };
 
 /* ---- Global instances ---- */

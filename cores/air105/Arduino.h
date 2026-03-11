@@ -100,6 +100,7 @@ int  analogRead(uint8_t pin);
 void analogWrite(uint8_t pin, int val);
 void analogReference(uint8_t type);
 int  analogReadVBAT(void);  /* Air105-specific: read battery voltage in mV */
+int  analogReadMultiple(uint8_t pin, uint16_t *buf, uint16_t count); /* Air105-specific: burst-read ADC samples via FIFO */
 void analogWriteFrequency(uint32_t freq);   /* Air105-specific: set PWM frequency (default 1000 Hz) */
 void analogWriteResolution(uint8_t bits);   /* Set PWM resolution (default 8-bit, 0-255) */
 
