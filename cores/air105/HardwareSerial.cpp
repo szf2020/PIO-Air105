@@ -21,8 +21,8 @@
 #define SERIAL_8N2  0x07   /* 8 data, no parity, 2 stop */
 
 /* ---- Instances ---- */
-HardwareSerial Serial(UART1, UART1_IRQn);
-HardwareSerial Serial0(UART0, UART0_IRQn);
+HardwareSerial Serial(UART0, UART0_IRQn);   /* CH340 USB-to-serial */
+HardwareSerial Serial1(UART1, UART1_IRQn);
 HardwareSerial Serial2(UART2, UART2_IRQn);
 HardwareSerial Serial3(UART3, UART3_IRQn);
 

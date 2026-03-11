@@ -46,9 +46,9 @@ extern "C" {
 #define LED_BLUE            LED_BUILTIN_BLUE
 #define LED_RED             LED_BUILTIN_RED
 
-/* ---- Serial pins (UART1 = default "Serial") ---- */
-#define PIN_SERIAL_TX     (4 * 16 + 6)     /* PE6 */
-#define PIN_SERIAL_RX     (4 * 16 + 7)     /* PE7 */
+/* ---- Serial pins (UART0 = default "Serial", CH340 USB-to-serial) ---- */
+#define PIN_SERIAL_TX     (0 * 16 + 1)     /* PA1 */
+#define PIN_SERIAL_RX     (0 * 16 + 0)     /* PA0 */
 
 /* ---- SPI pins (SPI2 = default, SPIM2 peripheral) ---- */
 /*
@@ -68,9 +68,8 @@ extern "C" {
 #define SCK               PIN_SPI_SCK
 
 /* ---- I2C pins (I2C0 = default) ---- */
-/* NOTE: I2C0 shares PE6/PE7 with UART1 (Serial).
- *       You cannot use Wire and Serial simultaneously.
- *       Use Serial0, Serial2, or Serial3 instead when using I2C. */
+/* NOTE: I2C0 shares PE6/PE7 with UART1 (Serial1).
+ *       You cannot use Wire and Serial1 simultaneously. */
 #define PIN_WIRE_SDA      (4 * 16 + 6)     /* PE6 (AF2) */
 #define PIN_WIRE_SCL      (4 * 16 + 7)     /* PE7 (AF2) */
 #define SDA               PIN_WIRE_SDA

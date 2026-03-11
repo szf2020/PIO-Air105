@@ -5,7 +5,7 @@
  * @url https://github.com/Jozo132/PIO-Air105
  *
  * Air105 has 4 UARTs (DesignWare APB UART, 16-byte FIFO).
- * Default Arduino "Serial" maps to UART1 (UART0 = download/debug).
+ * Default Arduino "Serial" maps to UART0 (connected to CH340 USB-to-serial).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -52,8 +52,8 @@ private:
 };
 
 /* ---- Global Serial instances ---- */
-extern HardwareSerial Serial;   /* UART1 */
-extern HardwareSerial Serial0;  /* UART0 (download/debug) */
+extern HardwareSerial Serial;   /* UART0 (CH340 USB-to-serial) */
+extern HardwareSerial Serial1;  /* UART1 */
 extern HardwareSerial Serial2;  /* UART2 */
 extern HardwareSerial Serial3;  /* UART3 */
 
