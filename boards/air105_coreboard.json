@@ -23,7 +23,7 @@
     "maximum_size": 4190208,
     "protocol": "air105-dfu",
     "require_upload_port": true,
-    "speed": 921600
+    "speed": 115200
   },
   "url": "https://wiki.luatos.com/chips/air105/index.html",
   "vendor": "LuatOS"
