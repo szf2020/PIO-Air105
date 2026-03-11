@@ -159,6 +159,7 @@ void yield(void);
 #include "Wire.h"
 #include "SPI.h"
 #include "DMA.h"
+#include "EEPROM.h"
 
 /* min/max as templates to avoid macro pitfalls in C++ */
 #undef min

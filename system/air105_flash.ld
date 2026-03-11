@@ -4,7 +4,7 @@
  * @url https://github.com/Jozo132/PIO-Air105
  *
  * Memory layout:
- *   FLASH: 4092 KB at 0x01001000 (first 4K after flash base reserved for header)
+ *   FLASH: 4028 KB at 0x01001000 (first 4K = header, last 64K = EEPROM)
  *   RAM:   640 KB at 0x20000000
  *
  * Stack placed at top of RAM (grows downward).
@@ -21,8 +21,9 @@ _Min_Stack_Size = DEFINED(_Min_Stack_Size) ? _Min_Stack_Size : 0x2000;   /* 8 KB
 
 MEMORY
 {
-    FLASH (rx)  : ORIGIN = 0x01001000, LENGTH = 4092K
-    RAM   (rwx) : ORIGIN = 0x20000000, LENGTH = 640K
+    FLASH  (rx)  : ORIGIN = 0x01001000, LENGTH = 4028K
+    EEPROM (r)   : ORIGIN = 0x013F0000, LENGTH = 64K    /* last 64K — EEPROM emulation (do not place code/data here) */
+    RAM    (rwx) : ORIGIN = 0x20000000, LENGTH = 640K
 }
 
 /* Stack at top of RAM */
