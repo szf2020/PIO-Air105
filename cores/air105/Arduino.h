@@ -132,6 +132,12 @@ long map(long value, long fromLow, long fromHigh, long toLow, long toHigh);
 long arduino_random(long howbig);
 #endif
 
+/* ---- Integer-to-string helpers (Arduino convention) ---- */
+char *itoa(int value, char *str, int base);
+char *utoa(unsigned int value, char *str, int base);
+char *ltoa(long value, char *str, int base);
+char *ultoa(unsigned long value, char *str, int base);
+
 /* ---- Internal init (called before setup) ---- */
 void init(void);
 

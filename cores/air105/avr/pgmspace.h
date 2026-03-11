@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
