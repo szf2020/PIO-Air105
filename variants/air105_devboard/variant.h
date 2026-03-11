@@ -87,11 +87,11 @@ extern "C" {
  *   - Channel 5: PC4 (A3)
  *   - Channel 6: PC5 (A4)
  */
-#define A0  (2 * 16 + 0)  /* PC0 — ADC channel 1 */
-#define A1  (2 * 16 + 1)  /* PC1 — ADC channel 2 */
-#define A2  (2 * 16 + 3)  /* PC3 — ADC channel 4 (channel 3 not available) */
-#define A3  (2 * 16 + 4)  /* PC4 — ADC channel 5 */
-#define A4  (2 * 16 + 5)  /* PC5 — ADC channel 6 */
+static const uint8_t A0 = (2 * 16 + 0);  /* PC0 — ADC channel 1 */
+static const uint8_t A1 = (2 * 16 + 1);  /* PC1 — ADC channel 2 */
+static const uint8_t A2 = (2 * 16 + 3);  /* PC3 — ADC channel 4 (channel 3 not available) */
+static const uint8_t A3 = (2 * 16 + 4);  /* PC4 — ADC channel 5 */
+static const uint8_t A4 = (2 * 16 + 5);  /* PC5 — ADC channel 6 */
 
 /* ---- PWM pins ---- */
 /*
