@@ -12,6 +12,11 @@
     "openocd_target": "air105"
   },
   "frameworks": ["arduino"],
+  "monitor": {
+    "dtr": 0,
+    "rts": 0,
+    "speed": 115200
+  },
   "name": "Air105 Core Board",
   "upload": {
     "maximum_ram_size": 655360,
