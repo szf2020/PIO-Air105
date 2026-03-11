@@ -126,12 +126,15 @@ class Uploader:
             payload += data
             pkt = self.make_packet(PacketType.FWData, payload)
             self.port.write(pkt)
+            self.port.flushOutput()
             cmd, data = self.receive_packet()
             if cmd != PacketType.Ack or data[0] == ord(')'):
                 retries += 1
                 print(f">>> Error writing chunk, retrying {retries}/5 Received : {cmd:02X} Data: {data}")
-                time.sleep(0.1)
+                self.port.read_all()
+                time.sleep(0.2 * retries)
                 continue
+            time.sleep(0.02)
             return
         raise ValueError("Error writing chunk, too many retries")
 
