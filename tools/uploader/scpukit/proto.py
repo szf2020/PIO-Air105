@@ -38,7 +38,7 @@ class Uploader:
             print(">>> No signature key. Ignoring firmware signature")
             self.rsa = NULL_KEY
 
-        self.port = serial.Serial(port, baudrate=baudrate, timeout=0.1)
+        self.port = serial.Serial(port, baudrate=baudrate, timeout=0.5)
         print(f">>> Port: {self.port.name}")
 
     def close(self):
@@ -102,16 +102,20 @@ class Uploader:
         sectorStart: starting sector to erase
         sectorEnd: ending sector to erase
         '''
-        print(">>> Erasing flash from {:08X} to {:08X}".format(sectorStart*4096, sectorEnd*4096))
+        numSectors = sectorEnd - sectorStart
+        print(">>> Erasing flash from {:08X} to {:08X} ({} sectors)".format(sectorStart*4096, sectorEnd*4096, numSectors))
         pkt = PacketEraseFlash(sectorStart, sectorEnd, 4096)
         pkt = self.make_packet(PacketType.EraserFlash, pkt.as_bytes)
+        # Erase can take ~60-400ms per sector; wait proportionally
+        erase_timeout = max(5, numSectors * 0.5)
         cmd = None
         while cmd == None:
             self.port.write(pkt)
-            cmd, _ = self.receive_packet(1) # Flash erase is slow and needs more time
+            self.port.flushOutput()
+            cmd, _ = self.receive_packet(erase_timeout)
             if cmd != False and cmd != PacketType.Ack:
                 raise ValueError("error erasing flash")
-        time.sleep(0.2)
+        time.sleep(0.5)
 
     def write_chunk(self, offset, data):
         '''
@@ -120,21 +124,20 @@ class Uploader:
         data: data to write
         '''
         print(f">>> Writing @0x{offset:04X}")
+        payload = struct.pack("<I", offset) + data
+        pkt = self.make_packet(PacketType.FWData, payload)
         retries = 0
         while retries < 5:
-            payload = struct.pack("<I", offset)
-            payload += data
-            pkt = self.make_packet(PacketType.FWData, payload)
+            self.port.read_all()
             self.port.write(pkt)
             self.port.flushOutput()
-            cmd, data = self.receive_packet()
-            if cmd != PacketType.Ack or data[0] == ord(')'):
+            cmd, resp = self.receive_packet(2)
+            if cmd != PacketType.Ack or (resp and resp[0] == ord(')')):
                 retries += 1
-                print(f">>> Error writing chunk, retrying {retries}/5 Received : {cmd:02X} Data: {data}")
-                self.port.read_all()
-                time.sleep(0.2 * retries)
+                print(f">>> Error writing chunk, retrying {retries}/5 Received : {cmd:02X} Data: {resp}")
+                time.sleep(0.5 * retries)
                 continue
-            time.sleep(0.02)
+            time.sleep(0.05)
             return
         raise ValueError("Error writing chunk, too many retries")
 
